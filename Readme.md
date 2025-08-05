@@ -24,3 +24,5 @@ Autor: Machado de Assis
 Idioma: pt  
 Número de downloads: 1011.0  
 _______________
+
+Ferramentas usadas: Java 24.0.2, Spring, Postgresql 17.5.
