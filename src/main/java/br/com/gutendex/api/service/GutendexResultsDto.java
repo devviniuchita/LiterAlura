@@ -1,4 +1,4 @@
-package br.com.gutendex.api;
+package br.com.gutendex.api.service;
 
 import br.com.gutendex.api.dto.BookDTO;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

@@ -1,4 +1,4 @@
-package br.com.gutendex.api;
+package br.com.gutendex.api.service;
 
 import java.net.URI;
 import java.net.http.HttpClient;

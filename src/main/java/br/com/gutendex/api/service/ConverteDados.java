@@ -1,4 +1,4 @@
-package br.com.gutendex.api;
+package br.com.gutendex.api.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
