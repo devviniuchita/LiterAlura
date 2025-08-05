@@ -2,184 +2,265 @@ package br.com.gutendex.api.principal;
 
 import br.com.gutendex.api.service.ConsumoApi;
 import br.com.gutendex.api.service.ConverteDados;
-import br.com.gutendex.api.dto.GutendexResponseDTO;
+import br.com.gutendex.api.dto.GutendexResponseDto;
 import br.com.gutendex.api.dto.AuthorDTO;
 import br.com.gutendex.api.dto.BookDTO;
+import br.com.gutendex.api.model.Author;
+import br.com.gutendex.api.model.Book;
+import br.com.gutendex.api.repository.AuthorRepository;
+import br.com.gutendex.api.repository.BookRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import java.util.Scanner;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.Comparator;
 
+@Component
 public class Principal {
-    private Scanner scanner = new Scanner(System.in);
-    private ConsumoApi consumoApi = new ConsumoApi();
-    private ConverteDados conversor = new ConverteDados();
+    private final Scanner scanner = new Scanner(System.in);
+
+    @Autowired
+    private ConsumoApi consumoApi;
+    @Autowired
+    private ConverteDados conversor;
     private final String URL_BASE = "https://gutendex.com/books/";
-    private GutendexResponseDTO dadosCache;
+
+    @Autowired
+    private AuthorRepository authorRepository;
+
+    @Autowired
+    private BookRepository bookRepository;
+
+    private List<BookDTO> allFoundBooks = new ArrayList<>();
+    private List<BookDTO> lastSearchResults = new ArrayList<>();
 
     public void exibeMenu() throws JsonProcessingException {
-        int opcao = -1;
+        int option = -1;
 
-        while (opcao != 0) {
+        while (option != 0) {
             System.out.println("""
                     
                     === MENU ===
-                    1 - Buscar livro pelo título
-                    2 - Listar livros registrados
+                    1 - Buscar livro por título
+                    2 - Listar livros registrado (últila busca)
                     3 - Listar autores registrados
-                    4 - Listar autores vivos em um ano
-                    5 - Listar livros por idioma
+                    4 - listar autores vivos em determinado ano
+                    5 - Listar livros por idioma (ex: pt, en, fr, etc.)
                     0 - Sair
                     """);
 
-            opcao = scanner.nextInt();
-            scanner.nextLine();
+            try {
+                option = scanner.nextInt();
+                scanner.nextLine();
 
-            switch (opcao) {
-                case 1 -> buscarLivroViaApi();
-                case 2 -> listarLivrosRegistrados();
-                case 3 -> listarAutoresRegistrados();
-                case 4 -> listarAutoresVivosEmAno();
-                case 5 -> listarLivrosPorIdioma();
-                case 0 -> System.out.println("Saindo...");
-                default -> System.out.println("Opção inválida.");
+                switch (option) {
+                    case 1 -> searchBookByTitle();
+                    case 2 -> listRegisteredBooks();
+                    case 3 -> listRegisteredAuthors();
+                    case 4 -> listAuthorsAliveInYear();
+                    case 5 -> listBooksByLanguage();
+                    case 0 -> System.out.println("Saindo...");
+                    default -> System.out.println("Opção invalida.");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("Por favor, insira um número válido.");
+                scanner.nextLine();
+            } catch (Exception e) {
+                System.out.println("Ocorreu um erro: " + e.getMessage());
+                scanner.nextLine();
             }
         }
     }
 
-    private void buscarLivroViaApi() {
+    private void searchBookByTitle() {
         System.out.println("Digite o título do livro:");
-        var titulo = scanner.nextLine();
-        var url = URL_BASE + "?search=" + titulo.replace(" ", "%20");
-        buscarDados(url);
-    }
+        var title = scanner.nextLine();
+        var url = URL_BASE + "?search=" + title.toLowerCase().replace(" ", "%20");
 
-    private void listarLivrosRegistrados() {
-        var url = URL_BASE + "?page=1";
-        buscarDados(url);
-    }
-
-    private void listarAutoresRegistrados() {
-        var url = URL_BASE + "?page=1";
         try {
             var json = consumoApi.obterDados(url);
-            var resposta = conversor.obterDados(json, GutendexResponseDTO.class);
-            dadosCache = resposta;
+            var response = conversor.obterDados(json, GutendexResponseDto.class);
+            this.lastSearchResults = response.getResults();
 
-            System.out.println("\n=== AUTORES REGISTRADOS ===");
-            resposta.getResults().stream()
-                    .flatMap(livro -> livro.getAuthors().stream())
-                    .distinct()
-                    .sorted(Comparator.comparing(AuthorDTO::getName))
-                    .forEach(autor -> {
-                        System.out.println("---- AUTOR ----");
-                        System.out.println("Nome: " + autor.getName());
-                        if (autor.getBirthYear() != null && autor.getDeathYear() != null) {
-                            System.out.println("Nascimento: " + autor.getBirthYear() +
-                                    ", Morte: " + autor.getDeathYear());
-                        }
-                        System.out.println("_______________");
-                    });
-        } catch (Exception e) {
-            System.out.println("Erro na busca: " + e.getMessage());
-        }
-    }
-
-    private void listarAutoresVivosEmAno() {
-        System.out.println("Digite o ano para verificar autores vivos:");
-        try {
-            int ano = scanner.nextInt();
-            scanner.nextLine();
-
-            if (dadosCache == null) {
-                var url = URL_BASE + "?page=1";
-                var json = consumoApi.obterDados(url);
-                dadosCache = conversor.obterDados(json, GutendexResponseDTO.class);
+            if(this.lastSearchResults.isEmpty()) {
+                System.out.println("Nenhum livro encontrado com esse título: " + title);
+                return;
             }
 
-            System.out.println("\n=== AUTORES VIVOS EM " + ano + " ===");
-            dadosCache.getResults().stream()
-                    .flatMap(livro -> livro.getAuthors().stream())
-                    .distinct()
-                    .filter(autor -> autor.getBirthYear() != null &&
-                            autor.getDeathYear() != null &&
-                            autor.getBirthYear() <= ano &&
-                            autor.getDeathYear() >= ano)
-                    .forEach(autor -> {
-                        System.out.println("---- AUTOR ----");
-                        System.out.println("Nome: " + autor.getName());
-                        System.out.println("Nascimento: " + autor.getBirthYear() +
-                                ", Morte: " + autor.getDeathYear());
-                        System.out.println("Idade em " + ano + ": " +
-                                (ano - autor.getBirthYear()) + " anos");
-                        System.out.println("_______________");
-                    });
+            this.lastSearchResults.forEach(book -> {
+                if(!allFoundBooks.stream().anyMatch(b -> b.equals(book))) {
+                    allFoundBooks.add(book);
+                }
+            });
+
+            saveToDatabase(this.lastSearchResults);
+            displayBooks(this.lastSearchResults);
         } catch (Exception e) {
-            System.out.println("Erro: " + e.getMessage());
+            System.out.println("Erro de pesquisa: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    private void listarLivrosPorIdioma() {
-        System.out.println("Digite o idioma para filtrar (ex: pt, en, fr):");
-        var idioma = scanner.nextLine().toLowerCase();
-
-        var url = URL_BASE + "?page=1";
+    private void saveToDatabase(List<BookDTO> books) {
         try {
-            var json = consumoApi.obterDados(url);
-            var resposta = conversor.obterDados(json, GutendexResponseDTO.class);
-            dadosCache = resposta;
+            books.forEach(bookDTO -> {
+                if (bookDTO.getAuthors() != null && !bookDTO.getAuthors().isEmpty()) {
+                    AuthorDTO authorDTO = bookDTO.getAuthors().get(0);
 
-            System.out.println("\n=== LIVROS EM " + idioma.toUpperCase() + " ===");
-            resposta.getResults().stream()
-                    .filter(livro -> livro.getLanguages() != null &&
-                            livro.getLanguages().contains(idioma))
-                    .forEach(livro -> {
-                        System.out.println("---- LIVRO ----");
-                        System.out.println("Título: " + livro.getTitle());
-                        System.out.println("Idioma: " + idioma);
-                        System.out.println("Downloads: " + livro.getDownloadCount());
-                        if (!livro.getAuthors().isEmpty()) {
-                            var autor = livro.getAuthors().get(0);
-                            System.out.println("Autor: " + autor.getName());
-                        }
-                        System.out.println("_______________");
-                    });
-        } catch (Exception e) {
-            System.out.println("Erro na busca: " + e.getMessage());
-        }
-    }
+                    Author author = authorRepository.findByName(authorDTO.getName())
+                            .orElseGet(() -> {
+                                Author newAuthor = new Author();
+                                newAuthor.setName(authorDTO.getName());
+                                newAuthor.setBirthYear(authorDTO.getBirthYear());
+                                newAuthor.setDeathYear(authorDTO.getDeathYear());
+                                return authorRepository.save(newAuthor);
+                            });
 
-    private void buscarDados(String url) {
-        try {
-            var json = consumoApi.obterDados(url);
-            var resposta = conversor.obterDados(json, GutendexResponseDTO.class);
-            dadosCache = resposta;
-
-            System.out.println("\nResultados encontrados:");
-            resposta.getResults().forEach(livro -> {
-                System.out.println("---- LIVRO ----");
-                System.out.println("Título: " + livro.getTitle());
-
-                String idioma = (livro.getLanguages() != null && !livro.getLanguages().isEmpty())
-                        ? livro.getLanguages().get(0) : "Idioma desconhecido";
-                System.out.println("Idioma: " + idioma);
-
-                System.out.println("Downloads: " + livro.getDownloadCount());
-
-                if (livro.getAuthors() != null && !livro.getAuthors().isEmpty()) {
-                    var autor = livro.getAuthors().get(0);
-                    System.out.println("Autor: " + autor.getName());
-                    if (autor.getBirthYear() != null && autor.getDeathYear() != null) {
-                        System.out.println("Nascimento: " + autor.getBirthYear() +
-                                ", Morte: " + autor.getDeathYear());
+                    if (!bookRepository.existsByTitleAndAuthor(bookDTO.getTitle(), author)) {
+                        Book book = new Book();
+                        book.setTitle(bookDTO.getTitle());
+                        book.setLanguage(bookDTO.getLanguages() != null && !bookDTO.getLanguages().isEmpty() ?
+                                bookDTO.getLanguages().get(0) : "Desconhecido..");
+                        book.setDownloadCount(bookDTO.getDownloadCount());
+                        book.setAuthor(author);
+                        bookRepository.save(book);
                     }
                 }
-                System.out.println("_______________");
             });
         } catch (Exception e) {
-            System.out.println("Erro na busca: " + e.getMessage());
+            System.out.println("Erro ao salvar banco de dados: " + e.getMessage());
         }
+    }
+
+    private void listRegisteredBooks() {
+        if(this.allFoundBooks.isEmpty()) {
+            System.out.println("Nenhum livro registrado ainda. Por favor, use a pesquisa (opcao 1).");
+            return;
+        }
+        System.out.println("\n=== TODOS OS LIVROS REGISTRADOS (" + this.allFoundBooks.size() + ") ===");
+        displayBooks(this.allFoundBooks);
+    }
+
+    private void listRegisteredAuthors() {
+        if (allFoundBooks.isEmpty()) {
+            System.out.println("Nenhum livro registrado ainda. Por favor, use a pesquisa (opcao 1).");
+            return;
+        }
+
+        System.out.println("\n=== AUTORES REGISTRADOS ===");
+        allFoundBooks.stream()
+                .flatMap(book -> book.getAuthors().stream())
+                .collect(Collectors.groupingBy(AuthorDTO::getName,
+                        Collectors.reducing((a1, a2) -> a1)))
+                .values()
+                .stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .sorted(Comparator.comparing(AuthorDTO::getName))
+                .forEach(author -> {
+                    System.out.println("---- AUTOR ----");
+                    System.out.println("Nome: " + author.getName());
+                    if (author.getBirthYear() != null && author.getDeathYear() != null) {
+                        System.out.println("Nascimento: " + author.getBirthYear() +
+                                ", Morte: " + author.getDeathYear());
+                    }
+                    System.out.println("_______________");
+                });
+    }
+
+    private void listAuthorsAliveInYear() {
+        if (allFoundBooks.isEmpty()) {
+            System.out.println("Nenhum livro registrado ainda. Por favor, use a pesquisa (opcao 1).");
+            return;
+        }
+
+        System.out.println("Digite um ano para ver os autores vivos:");
+        try {
+            int year = scanner.nextInt();
+            scanner.nextLine();
+
+            System.out.println("\n=== AUTORES VIVOS EM " + year + " ===");
+            allFoundBooks.stream()
+                    .flatMap(book -> book.getAuthors().stream())
+                    .collect(Collectors.groupingBy(AuthorDTO::getName,
+                            Collectors.reducing((a1, a2) -> a1)))
+                    .values()
+                    .stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(author -> author.getBirthYear() != null &&
+                            author.getDeathYear() != null &&
+                            author.getBirthYear() <= year &&
+                            author.getDeathYear() >= year)
+                    .sorted(Comparator.comparing(AuthorDTO::getName))
+                    .forEach(author -> {
+                        System.out.println("---- AUTOR ----");
+                        System.out.println("Nome: " + author.getName());
+                        System.out.println("Nascimento: " + author.getBirthYear() +
+                                ", Morte: " + author.getDeathYear());
+                        System.out.println("Nasceu em " + year + ": " +
+                                (year - author.getBirthYear()) + " Anos");
+                        System.out.println("_______________");
+                    });
+        } catch (Exception e) {
+            System.out.println("Ano invalido. digite um número (ex: 1800).");
+            scanner.nextLine();
+        }
+    }
+
+    private void listBooksByLanguage() {
+        if (allFoundBooks.isEmpty()) {
+            System.out.println("Nenhum livro registrado ainda. Por favor, usa pesquisa (opcao 1).");
+            return;
+        }
+
+        System.out.println("Digite o idioma para usar o filtro (ex: pt, en, fr):");
+        var language = scanner.nextLine().toLowerCase();
+
+        System.out.println("\n=== LIVROS EM " + language.toUpperCase() + " ===");
+        List<BookDTO> filteredBooks = allFoundBooks.stream()
+                .filter(book -> book.getLanguages() != null &&
+                        book.getLanguages().stream()
+                                .anyMatch(lang -> lang.equalsIgnoreCase(language)))
+                .toList();
+
+        if (filteredBooks.isEmpty()) {
+            System.out.println("Nenhum livro encontrado em " + language + " idioma");
+        } else {
+            displayBooks(filteredBooks);
+        }
+    }
+
+    private void displayBooks(List<BookDTO> books) {
+        if(books == null || books.isEmpty()) {
+            System.out.println("Nenhum livro para exibir.");
+            return;
+        }
+
+        System.out.println("\n=== LIVROS ENCONTRADOS " + books.size() +" ===");
+        books.forEach(book -> {
+            System.out.println("\n---- LIVRO ----");
+            System.out.println("Título: " + book.getTitle());
+
+            String language = (book.getLanguages() != null && !book.getLanguages().isEmpty())
+                    ? book.getLanguages().get(0) : "Idioma desconhecido";
+            System.out.println("Idioma: " + language);
+
+            System.out.println("Downloads: " + book.getDownloadCount());
+
+            if(book.getAuthors() != null && !book.getAuthors().isEmpty()) {
+                var author = book.getAuthors().get(0);
+                System.out.println("Autor: " + author.getName());
+                if(author.getBirthYear() != null && author.getDeathYear() != null) {
+                    System.out.printf("Período de vida: %d - %d (%d anos)\n",
+                            author.getBirthYear(),
+                            author.getDeathYear(),
+                            author.getDeathYear() - author.getBirthYear());
+                }
+            }
+            System.out.println("_______________");
+        });
+        System.out.println("=== FIM DOS RESULTADOS ===");
     }
 }

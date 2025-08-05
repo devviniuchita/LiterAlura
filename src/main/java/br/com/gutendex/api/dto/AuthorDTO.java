@@ -23,4 +23,7 @@ public class AuthorDTO {
     public Integer getDeathYear() {
         return deathYear;
     }
+
+    public AuthorDTO() {}
+
 }
