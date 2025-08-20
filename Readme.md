@@ -7,13 +7,11 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.5-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Maven](https://img.shields.io/badge/Maven-4+-C71A36?style=for-the-badge&logo=apache-maven&logoColor=white)
 
-[![GitHub Stars](https://img.shields.io/github/stars/vinmartinsofc/consulta-gutendx?style=for-the-badge)](https://github.com/vinmartinsofc/consulta-gutendx/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/vinmartinsofc/consulta-gutendx?style=for-the-badge)](https://github.com/vinmartinsofc/consulta-gutendx/network)
-[![License](https://img.shields.io/github/license/vinmartinsofc/consulta-gutendx?style=for-the-badge)](https://github.com/vinmartinsofc/consulta-gutendx/blob/main/LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/devviniuchita/LiterAlura?style=for-the-badge)](https://github.com/devviniuchita/LiterAlura/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/devviniuchita/LiterAlura?style=for-the-badge)](https://github.com/devviniuchita/LiterAlura/network)
+[![License](https://img.shields.io/github/license/devviniuchita/LiterAlura?style=for-the-badge)](https://github.com/devviniuchita/LiterAlura/blob/main/LICENSE)
 
 _Aplicação console interativa para explorar o catálogo de livros do Project Gutenberg_
-
-[🎥 **Ver Demonstração**](https://youtu.be/xcfN6VntCak) • [📖 **Documentação**](#-funcionalidades) • [🚀 **Começar**](#-como-executar)
 
 </div>
 
@@ -42,12 +40,6 @@ _Aplicação console interativa para explorar o catálogo de livros do Project G
 | 👤 **Listar Autores**      | Mostrar autores dos livros registrados      | ✅     |
 | 🕰️ **Autores por Período** | Filtrar autores vivos em determinado ano    | ✅     |
 | 🌐 **Filtro por Idioma**   | Buscar livros por idioma (pt, en, fr, etc.) | ✅     |
-
-### 🎥 Demonstração em Vídeo
-
-[![Demo LiterAlura](https://img.youtube.com/vi/xcfN6VntCak/maxresdefault.jpg)](https://youtu.be/xcfN6VntCak)
-
-**O que você verá no vídeo (2:45):**
 
 - 🖥️ Navegação pelo menu interativo
 - 📖 Busca e registro de livros ("Dom Casmurro")
@@ -111,8 +103,8 @@ _______________
 1. **Clone o repositório**
 
    ```bash
-   git clone https://github.com/vinmartinsofc/consulta-gutendx.git
-   cd consulta-gutendx
+   git clone https://github.com/devviniuchita/LiterAlura.git
+   cd LiterAlura
    ```
 
 2. **Configure o banco de dados**
@@ -234,7 +226,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 **⭐ Se este projeto te ajudou, considere dar uma estrela!**
 
-[![GitHub Stars](https://img.shields.io/github/stars/vinmartinsofc/consulta-gutendx?style=social)](https://github.com/vinmartinsofc/consulta-gutendx/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/devviniuchita/LiterAlura?style=social)](https://github.com/devviniuchita/LiterAlura/stargazers)
 
 _Feito com ❤️ e ☕ por [Vinícius Uchita](https://github.com/devviniuchita)_
 
